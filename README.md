@@ -1,4 +1,4 @@
-#wave-custom-invoice
+# wave-custom-invoice
 
 Takes a Wave PDF invoice and outputs another PDF with a custom design. Except it doesn’t actually work right now.
 
