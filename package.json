@@ -1,0 +1,17 @@
+{
+  "name": "wave-custom-invoice",
+  "version": "0.0.1",
+  "description": "Takes a Wave PDF invoice and outputs another PDF with a custom design.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/etienne/wave-custom-invoice"
+  },
+  "author": "Étienne Després",
+  "dependencies": {
+    "pdf2json": "1.1.7"
+  }
+}
