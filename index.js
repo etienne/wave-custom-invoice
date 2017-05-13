@@ -49,26 +49,71 @@ Promise.all(promises).then(values => {
       product: invoiceItem.product,
       amount: invoiceItem.amount,
       quantity: invoiceItem.quantity,
+      total: invoiceItem.amount * invoiceItem.quantity,
     };
     
     if (invoiceNumber in invoices) {
       invoices[invoiceNumber].lines.push(line)
     } else {
+      const customer = customers[invoiceItem.customer];
       invoices[invoiceNumber] = {
+        business: config.business,
         number: invoiceNumber,
-        customer: customers[invoiceItem.customer],
+        customer: {
+          name: customer.customer_name,
+          email: customer.email,
+          firstName: customer.contact_first_name,
+          lastName: customer.contact_last_name,
+          phone: customer.phone,
+          fax: customer.fax,
+          mobile: customer.mobile,
+          tollFree: customer.toll_free,
+          website: customer.website,
+          country: customer.country,
+          province: customer['province/state'],
+          address1: customer.address_line_1,
+          address2: customer.address_line_2,
+          city: customer.city,
+          postalCode: customer['postal_code/zip_code'],
+        },
         lines: [line],
         currency: invoiceItem.currency,
         date: invoiceItem.invoice_date,
         due: invoiceItem.due_date,
-        taxes: invoiceItem.taxes.split(', '),
+        taxes: invoiceItem.taxes.split(', ').map(tax => { 
+          return { 
+            name: tax,
+            rate: config.taxes[tax].rate,
+            number: config.taxes[tax].number,
+          } 
+        }),
       }
     }
   });
   
   for (const invoiceNumber in invoices) {
     if (invoices.hasOwnProperty(invoiceNumber)) {
-      const html = Mustache.render(template, invoices[invoiceNumber]);
+      const invoice = invoices[invoiceNumber];
+      
+      invoice.subtotal = invoice.lines.map(line => {
+        return line.total
+      }).reduce((acc, val) => {
+        return acc + val;
+      });
+      
+      invoice.taxes.map(tax => {
+        tax.amount = Math.round(tax.rate * invoice.subtotal) / 100;
+        return tax;
+      });
+      
+      invoice.total = invoice.subtotal + invoice.taxes.map(tax => {
+        return tax.amount;
+      }).reduce((acc, val) => {
+        return acc + val;
+      });
+      invoice.total = Math.round(invoice.total * 100) / 100;
+      
+      const html = Mustache.render(template, invoice);
 
       // Generate HTML
       if (config.generateHTML) {

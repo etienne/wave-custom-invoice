@@ -4,6 +4,63 @@
     <title>Facture {{ number }}</title>
   </head>
   <body>
-    yo c'est la facture {{ number }}
+    <header>
+      <h1>{{ business.name }}</h1>
+      <p class="address">
+        {{ business.address }}, {{ business.city }}<br>
+        {{ business.province }} {{ business.postalCode }}<br>
+        {{ business.phone }} {{ business.email }}
+      </p>
+    </header>
+    
+    <main>
+      <h1>Invoice {{ number }}</h1>
+      <p class="date">{{ date }}</p>
+      
+      <section class="client">
+        <h1>Client</h1>
+        <p class="address">
+          {{ customer.name }}<br>
+          {{ customer.address1 }}, {{ customer.city }}<br>
+          {{ customer.province }} {{ customer.postalCode }}<br>
+          {{ customer.phone }} {{ customer.email }}
+        </p>
+      </section>
+      
+      <section class="lines">
+        <table>
+          <tbody>
+            {{# lines }}
+              <tr>
+                <td>
+                  <div class="product">{{ product }}</div>
+                  <div class="description">{{ description }}</div>
+                </td>
+                <td>{{ total }}</td>
+              </tr>
+            {{/ lines }}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>Subtotal</td>
+              <td>{{ subtotal }}</td>
+            </tr>
+            {{# taxes }}
+              <tr>
+                <td>
+                  {{ name }} – {{ rate }}%
+                  <span class="tax-number">{{ number }}</span>
+                </td>
+                <td>{{ amount }}</td>
+              </tr>
+            {{/ taxes }}
+            <tr>
+              <td>Total</td>
+              <td>{{ total }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+    </main>
   </body>
 </html>
