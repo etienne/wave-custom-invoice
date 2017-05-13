@@ -1,11 +1,10 @@
 const fs = require('fs');
+const pdf = require('html-pdf');
 const parse = require('csv-parse');
+const Mustache = require('mustache');
+const config = require('./config.json');
 
 const promises = [];
-const taxes = {
-  TPS: 0.05,
-  TVQ: 0.09975,
-};
 
 // Load and parse CSV files
 ['invoice_items', 'customers'].forEach(file => {
@@ -21,13 +20,25 @@ const taxes = {
   }));
 });
 
+// Load Mustache template
+promises.push(new Promise((resolve, reject) => {
+  const template = 'index.mustache';
+  fs.readFile(`template/${template}`, 'utf8', (err, data) => {
+    if (err) reject(`${template} could not be read. ${err}`);
+    resolve(data);
+  });
+}));
+
 // Extract data from CSV and create invoice objects
 Promise.all(promises).then(values => {
+  const invoiceItems = values[0];
+  const customersData = values[1];
+  const template = values[2];
+
   const customers = {};
   const invoices = {};
 
-  const invoiceItems = values[0];
-  values[1].forEach(customer => {
+  customersData.forEach(customer => {
     customers[customer.customer_name] = customer;
   });
   
@@ -41,10 +52,8 @@ Promise.all(promises).then(values => {
     };
     
     if (invoiceNumber in invoices) {
-      // Invoice already exists; add line item
       invoices[invoiceNumber].lines.push(line)
     } else {
-      // Invoice doesn’t exist yet; create it
       invoices[invoiceNumber] = {
         number: invoiceNumber,
         customer: customers[invoiceItem.customer],
@@ -57,7 +66,28 @@ Promise.all(promises).then(values => {
     }
   });
   
-  console.log(invoices);
+  for (const invoiceNumber in invoices) {
+    if (invoices.hasOwnProperty(invoiceNumber)) {
+      // Generate HTML
+      if (config.generateHTML) {
+        const html = Mustache.render(template, invoices[invoiceNumber]);
+        const htmlFilename = `${config.htmlDirectory}/${invoiceNumber}.html`;
+        fs.writeFile(htmlFilename, html, (err) => {
+          if (err) throw err;
+          console.log(`Saved ${htmlFilename}`);
+        });
+      }
+      
+      // Generate PDF
+      if (config.generatePDF) {
+        const pdfFilename = `${config.pdfDirectory}/${invoiceNumber}.pdf`;
+        pdf.create(html).toFile(pdfFilename, (err, res) => {
+          if (err) return console.log(err);
+          console.log(`Saved ${pdfFilename}`);
+        });
+      }
+    }
+  }
 }, reason => {
   console.log(reason);
 });
