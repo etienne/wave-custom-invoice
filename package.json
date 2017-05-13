@@ -1,7 +1,7 @@
 {
   "name": "wave-custom-invoice",
   "version": "0.0.1",
-  "description": "Takes a Wave PDF invoice and outputs another PDF with a custom design.",
+  "description": "Takes Wave CSV data and outputs a custom-designed PDF.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,6 +12,6 @@
   },
   "author": "Étienne Després",
   "dependencies": {
-    "pdf2json": "1.1.7"
+    "csv-parse": "^1.2.0"
   }
 }
