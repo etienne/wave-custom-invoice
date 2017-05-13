@@ -1,13 +1,13 @@
 # wave-custom-invoice
 
-Takes Wave CSV data and outputs a custom-designed PDF. Some data (like tax rates) is hard-coded due to the limitations of the Wave CSV, so this only works out of the box for my specific use case. But it's pretty easy to adapt.
-
-Oh, also, it doesn’t really work right now.
+Takes Wave CSV data and outputs a custom-designed PDF.
 
 ## Usage
 
-Download your CSV data from Wave, and put all the files in the `data` folder. Then run:
+1. Download your CSV data from Wave, and put the files in the `data` folder. The only required files are `invoice_items.csv` and `customers.csv`.
 
-```
-node index.js
-```
+2. Make a copy of `config.json.example`, rename it `config.json`, and edit it to suit your needs.
+
+3. Optionally, customize `template/index.mustache`.
+
+4. Run `node index.js`.
