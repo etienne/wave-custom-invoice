@@ -3,6 +3,9 @@
   "pdfDirectory": "./output/pdf",
   "generateHTML": true,
   "generatePDF": true,
+  "pdfConfig": { 
+    "format": "Letter" 
+  },
   "taxes": {
     "TPS": 0.05,
     "TVQ": 0.09975

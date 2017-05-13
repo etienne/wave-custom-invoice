@@ -68,9 +68,10 @@ Promise.all(promises).then(values => {
   
   for (const invoiceNumber in invoices) {
     if (invoices.hasOwnProperty(invoiceNumber)) {
+      const html = Mustache.render(template, invoices[invoiceNumber]);
+
       // Generate HTML
       if (config.generateHTML) {
-        const html = Mustache.render(template, invoices[invoiceNumber]);
         const htmlFilename = `${config.htmlDirectory}/${invoiceNumber}.html`;
         fs.writeFile(htmlFilename, html, (err) => {
           if (err) throw err;
@@ -81,7 +82,7 @@ Promise.all(promises).then(values => {
       // Generate PDF
       if (config.generatePDF) {
         const pdfFilename = `${config.pdfDirectory}/${invoiceNumber}.pdf`;
-        pdf.create(html).toFile(pdfFilename, (err, res) => {
+        pdf.create(html, config.pdfConfig).toFile(pdfFilename, (err, res) => {
           if (err) return console.log(err);
           console.log(`Saved ${pdfFilename}`);
         });
