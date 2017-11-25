@@ -4,7 +4,13 @@ Takes Wave CSV data and outputs custom HTML and PDF.
 
 ## Usage
 
-First, you need to download your CSV data from Wave (Settings → Data Export → Export as CSV), and put the files in the directory of your choice (`data` in the example below). The only required files are `invoice_items.csv` and `customers.csv`.
+First, install in your project:
+
+```
+npm install --save wave-custom-invoice
+```
+
+Next, you need to download your CSV data from Wave (Settings → Data Export → Export as CSV), and put the files in the directory of your choice (`data` in the example below). The only required files from Wave are `invoice_items.csv` and `customers.csv`.
 
 You will also need a Mustache template. An example is provided in [`template.mustache`](template.mustache).
 
