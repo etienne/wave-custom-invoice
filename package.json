@@ -1,6 +1,6 @@
 {
   "name": "wave-custom-invoice",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Takes Wave CSV data and outputs custom HTML and PDF.",
   "main": "index.js",
   "scripts": {
