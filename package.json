@@ -12,7 +12,7 @@
   },
   "author": "Étienne Després",
   "dependencies": {
-    "csv-parse": "^1.2.0",
+    "csv-parse": "^4.4.6",
     "html-pdf": "^2.1.0",
     "moment": "2.18.1",
     "mustache": "^2.3.0",
