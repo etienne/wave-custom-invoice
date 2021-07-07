@@ -70,6 +70,7 @@ module.exports = function(config) {
   
     invoiceItems.forEach(invoiceItem => {
       const invoiceNumber = invoiceItem.invoice_num;
+      const purchaseOrder = invoiceItem.po_so;
       const line = {
         description: invoiceItem.description,
         product: invoiceItem.product,
@@ -85,6 +86,7 @@ module.exports = function(config) {
         invoices[invoiceNumber] = {
           business: config.business,
           number: invoiceNumber,
+          po: purchaseOrder,
           customer: {
             name: customer.customer_name,
             email: customer.email,
