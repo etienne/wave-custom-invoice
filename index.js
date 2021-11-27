@@ -1,13 +1,11 @@
+const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const pdf = require('html-pdf');
-const parse = require('csv-parse');
 const mustache = require('mustache');
 const moment = require('moment');
 const numeral = require('numeral');
 require('numeral/locales');
-
-const promises = [];
 
 function ensureDirectoryExists(filePath) {
   var dirname = path.dirname(filePath);
@@ -22,163 +20,187 @@ function successMessage(message) {
   console.log(`\x1b[32m${message}\x1b[0m`);
 }
 
-function errorString(message) {
-  return `\x1b[31mError: ${message}\x1b[0m`;
-}
-
 module.exports = function(config) {
-  numeral.locale(config.locale);
+  if (!config.token) {
+    console.error('Wave API token is missing');
+    return;
+  }
 
   function formatCurrency(number) {
     return numeral(number).format(config.currencyFormat);
   }
 
-  // Load and parse CSV files
-  ['invoice_items', 'customers'].forEach(file => {
-    promises.push(new Promise((resolve, reject) => {
-      fs.readFile(`${config.dataDirectory}/${file}.csv`, 'utf8', (err, data) => {
-        if (err) reject(errorString(`${file}.csv could not be read. ${err}`));
+  numeral.locale(config.locale);
 
-        parse(data, { columns: true }, (err, output) => {
-          if (err) reject(errorString(`${file}.csv could not be parsed. ${err}`));
-          resolve(output);
-        });
-      });
-    }));
-  });
-  
   // Load Mustache template
-  promises.push(new Promise((resolve, reject) => {
-    fs.readFile(`${config.template}`, 'utf8', (err, data) => {
-      if (err) reject(errorString(`${config.template} could not be read. ${err}`));
-      resolve(data);
-    });
-  }));
+  const template = fs.readFileSync(`${config.template}`, 'utf8');
 
-  // Extract data from CSV and create invoice objects
-  Promise.all(promises).then(values => {
-    const invoiceItems = values[0];
-    const customersData = values[1];
-    const template = values[2];
-
-    const customers = {};
-    const invoices = {};
-
-    customersData.forEach(customer => {
-      customers[customer.customer_name] = customer;
-    });
-  
-    invoiceItems.forEach(invoiceItem => {
-      const invoiceNumber = invoiceItem.invoice_num;
-      const purchaseOrder = invoiceItem.po_so;
-      const line = {
-        description: invoiceItem.description,
-        product: invoiceItem.product,
-        amount: invoiceItem.amount,
-        quantity: invoiceItem.quantity,
-        total: invoiceItem.amount * invoiceItem.quantity,
-      };
-    
-      if (invoiceNumber in invoices) {
-        invoices[invoiceNumber].lines.push(line)
-      } else {
-        const customer = customers[invoiceItem.customer];
-        invoices[invoiceNumber] = {
-          business: config.business,
-          number: invoiceNumber,
-          po: purchaseOrder,
-          customer: {
-            name: customer.customer_name,
-            email: customer.email,
-            firstName: customer.contact_first_name,
-            lastName: customer.contact_last_name,
-            phone: customer.phone,
-            fax: customer.fax,
-            mobile: customer.mobile,
-            tollFree: customer.toll_free,
-            website: customer.website,
-            country: customer.country,
-            province: customer['province/state'],
-            address1: customer.address_line_1,
-            address2: customer.address_line_2,
-            city: customer.city,
-            postalCode: customer['postal_code/zip_code'],
-          },
-          lines: [line],
-          currency: invoiceItem.currency,
-          date: moment(invoiceItem.invoice_date).format(config.dateFormat),
-          due: invoiceItem.due_date,
-          taxes: invoiceItem.taxes.split(', ').map(tax => { 
-            return { 
-              name: tax,
-              rate: config.taxes[tax].rate,
-              number: config.taxes[tax].number,
-            } 
-          }),
+  axios({
+    url: 'https://gql.waveapps.com/graphql/public',
+    method: 'post',
+    headers: {
+      'Authorization': 'Bearer ' + config.token,
+      'Content-Type': 'application/json',
+    },
+    data: {
+      query: `
+        query {
+          businesses {
+            edges {
+              node {
+                invoices(page: 1, pageSize: 5) {
+                  edges {
+                    node {
+                      invoiceNumber,
+                      poNumber,
+                      invoiceDate,
+                      dueDate,
+                      status,
+                      amountDue { ...money },
+                      amountPaid { ...money },
+                      taxTotal { ...money },
+                      total { ...money },
+                      currency { code },
+                      exchangeRate,
+                      items {
+                        description,
+                        quantity,
+                        unitPrice,
+                        subtotal { ...money },
+                        total { ...money },
+                        taxes {
+                          amount { ...money },
+                          rate,
+                          salesTax {
+                            name,
+                            abbreviation,
+                            description,
+                            taxNumber,
+                            rate,
+                            isCompound,
+                            isRecoverable,
+                            isArchived,
+                          },
+                        },
+                        product {
+                          name,
+                          description,
+                          unitPrice,
+                          isSold,
+                          isBought,
+                          isArchived,
+                        },
+                      },
+                      memo,
+                      footer,
+                      customer {
+                        name,
+                        address { ...address },
+                        firstName,
+                        lastName,
+                        email,
+                        mobile,
+                        phone,
+                        website,
+                      },
+                      business {
+                        name,
+                        address { ...address },
+                        phone,
+                        website
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
+
+        fragment money on Money {
+          raw,
+          value,
+          currency {
+            code,
+          }
+        }
+        
+        fragment address on Address {
+          addressLine1,
+          addressLine2,
+          city,
+          province { name },
+          country { name },
+          postalCode,
+        }
+      `,
+      variables: {}
+    },
+  })
+  .then(r => {
+    let invoices = [];
+    r.data.data.businesses.edges.forEach(b => invoices = [...invoices, ...b.node.invoices.edges]);
+
+    invoices.forEach(({ node: invoice }) => {
+      let taxes = {};
+      let rawSubtotal = 0;
+
+      invoice.items.forEach(i => {
+        rawSubtotal = rawSubtotal + i.subtotal.raw;
+        i.subtotal.formatted = formatCurrency(i.subtotal.raw / 100);
+
+        i.taxes.forEach(t => {
+          if (taxes[t.salesTax.name]) {
+            const existingRawAmount = taxes[t.salesTax.name].amount.raw;
+            taxes[t.salesTax.name].amount.raw = existingRawAmount + t.amount.raw;
+            taxes[t.salesTax.name].amount.value = taxes[t.salesTax.name].amount.raw / 100;
+            taxes[t.salesTax.name].amount.formatted = formatCurrency(taxes[t.salesTax.name].amount.value);
+          } else {
+            taxes[t.salesTax.name] = t;
+            taxes[t.salesTax.name].salesTax.percent = numeral(t.salesTax.rate * 100).format('0.[000]');
+            taxes[t.salesTax.name].amount.formatted = formatCurrency(taxes[t.salesTax.name].amount.raw / 100);
+          }
+        })
+      });
+
+      invoice.taxes = Object.values(taxes).sort((a, b) => a.salesTax.name > b.salesTax.name ? 1 : -1);
+
+      invoice.subtotal = {
+        raw: rawSubtotal,
+        formatted: formatCurrency(rawSubtotal / 100),
+      }
+
+      if (invoice.business.address.province.name == 'Quebec') {
+        invoice.business.address.province.name = 'Québec';
+      }
+
+      if (invoice.customer && invoice.customer.address && invoice.customer.address.province && invoice.customer.address.province.name == 'Quebec') {
+        invoice.customer.address.province.name = 'Québec';
+      }
+
+      invoice.invoiceDate = moment(invoice.invoiceDate).format(config.dateFormat);
+      invoice.total.formatted = formatCurrency(invoice.total.raw / 100);
+
+      const html = mustache.render(template, invoice);
+        
+      // Generate HTML
+      if (config.generateHTML) {
+        const htmlFilename = `${config.htmlDirectory}/${invoice.invoiceNumber}.html`;
+        ensureDirectoryExists(htmlFilename);
+        fs.writeFile(htmlFilename, html, (err) => {
+          if (err) throw err;
+          successMessage(`Output ${htmlFilename}`);
+        });
+      }
+      
+      // Generate PDF
+      if (config.generatePDF) {
+        const pdfFilename = `${config.pdfDirectory}/${invoice.invoiceNumber}.pdf`;
+        pdf.create(html, config.pdfConfig).toFile(pdfFilename, (err) => {
+          if (err) return console.log(err);
+          successMessage(`Output ${pdfFilename}`);
+        });
       }
     });
-  
-    for (const invoiceNumber in invoices) {
-      if (invoices.hasOwnProperty(invoiceNumber)) {
-        const invoice = invoices[invoiceNumber];
-        
-        invoice.subtotal = invoice.lines.map(line => {
-          return line.total
-        }).reduce((acc, val) => {
-          return acc + val;
-        });
-        
-        invoice.taxes.map(tax => {
-          tax.amount = Math.round(tax.rate * invoice.subtotal) / 100;
-          return tax;
-        });
-        
-        invoice.total = invoice.subtotal + invoice.taxes.map(tax => {
-          return tax.amount;
-        }).reduce((acc, val) => {
-          return acc + val;
-        });
-        invoice.total = Math.round(invoice.total * 100) / 100;
-        
-        // Format currency
-        invoice.lines.map(line => {
-          line.total = formatCurrency(line.total);
-          return line;
-        });
-        
-        invoice.taxes.map(tax => {
-          tax.amount = formatCurrency(tax.amount);
-          return tax;
-        });
-        
-        invoice.subtotal = formatCurrency(invoice.subtotal);
-        invoice.total = formatCurrency(invoice.total);
-        
-        const html = mustache.render(template, invoice);
-        
-        // Generate HTML
-        if (config.generateHTML) {
-          const htmlFilename = `${config.htmlDirectory}/${invoiceNumber}.html`;
-          ensureDirectoryExists(htmlFilename);
-          fs.writeFile(htmlFilename, html, (err) => {
-            if (err) throw err;
-            successMessage(`Output ${htmlFilename}`);
-          });
-        }
-        
-        // Generate PDF
-        if (config.generatePDF) {
-          const pdfFilename = `${config.pdfDirectory}/${invoiceNumber}.pdf`;
-          pdf.create(html, config.pdfConfig).toFile(pdfFilename, (err, res) => {
-            if (err) return console.log(err);
-            successMessage(`Output ${pdfFilename}`);
-          });
-        }
-      }
-    }
-  }, reason => {
-    console.log(reason);
   });
 };
-

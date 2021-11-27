@@ -1,7 +1,7 @@
 {
   "name": "wave-custom-invoice",
   "version": "0.1.1",
-  "description": "Takes Wave CSV data and outputs custom HTML and PDF.",
+  "description": "Takes Wave API data and outputs custom HTML and PDF.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,7 +12,7 @@
   },
   "author": "Étienne Després",
   "dependencies": {
-    "csv-parse": "^1.2.0",
+    "axios": "0.24.0",
     "html-pdf": "^2.1.0",
     "moment": "2.18.1",
     "mustache": "^2.3.0",

@@ -1,6 +1,6 @@
 # wave-custom-invoice
 
-Takes Wave CSV data and outputs custom HTML and PDF.
+Takes Wave API data and outputs custom HTML and PDF.
 
 ## Usage
 
@@ -10,17 +10,17 @@ First, install in your project:
 npm install --save wave-custom-invoice
 ```
 
-Next, you need to download your CSV data from Wave (Settings → Data Export → Export as CSV), and put the files in the directory of your choice (`data` in the example below). The only required files from Wave are `invoice_items.csv` and `customers.csv`.
+Next, you need to create an application in Wave, and generate a token.
 
 You will also need a Mustache template. An example is provided in [`template.mustache`](template.mustache).
 
-In your project, require `wave-custom-invoice` and feed it a config object.
+In your project, require `wave-custom-invoice` and pass it a config object.
 
 ```js
 const wave = require('wave-custom-invoice');
 
 const waveConfig = {
-  dataDirectory: 'data',
+  token: 'your_wave_application_token',
   template: 'template.mustache',
   
   htmlDirectory: "./output/html",
@@ -30,28 +30,8 @@ const waveConfig = {
   generatePDF: true,
 
   pdfConfig: {
-    format: "Letter" 
-  },
-  
-  business: {
-    name: "Roger Sampleson",
-    address: "123, Sample St.",
-    city: "Sampleville",
-    province: "PV",
-    postalCode: "A1B 2C3",
-    phone: "555-555-1212",
-    email: "roger@example.com"
-  },
-
-  taxes: {
-    TPS: {
-      rate: 5,
-      number: "123456789 RT0001"
-    },
-    TVQ: {
-      rate: 9.975,
-      number: "1234567890 TQ0001"
-    },
+    base: 'http://localhost:5000', // You need to serve the HTML using a web server; I suggest PHP's built-in web server
+    format: "Letter",
   },
   
   locale: 'fr-ca',

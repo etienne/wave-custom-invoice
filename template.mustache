@@ -1,28 +1,28 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Invoice {{ number }}</title>
+    <title>Invoice {{ invoiceNumber }}</title>
   </head>
   <body>
     <header>
       <h1>{{ business.name }}</h1>
       <p class="address">
-        {{ business.address }}, {{ business.city }}<br>
-        {{ business.province }} {{ business.postalCode }}<br>
-        {{ business.phone }} {{ business.email }}
+        {{ business.address.addressLine1 }}, {{ business.address.city }}<br>
+        {{ business.address.province.name }} {{ business.address.postalCode }}<br>
+        {{ business.phone }}
       </p>
     </header>
     
     <main>
-      <h1>Invoice {{ number }}</h1>
-      <p class="date">{{ date }}</p>
+      <h1>Invoice {{ invoiceNumber }}</h1>
+      <p class="date">{{ invoiceDate }}</p>
       
       <section class="client">
         <h1>Client</h1>
         <p class="address">
           {{ customer.name }}<br>
-          {{ customer.address1 }}, {{ customer.city }}<br>
-          {{ customer.province }} {{ customer.postalCode }}<br>
+          {{ customer.address.addressLine1 }}, {{ customer.address.city }}<br>
+          {{ customer.address.province.name }} {{ customer.address.postalCode }}<br>
           {{ customer.phone }} {{ customer.email }}
         </p>
       </section>
@@ -30,33 +30,33 @@
       <section class="lines">
         <table>
           <tbody>
-            {{# lines }}
+            {{# items }}
               <tr>
                 <td>
-                  <div class="product">{{ product }}</div>
+                  <div class="product">{{ product.name }}</div>
                   <div class="description">{{ description }}</div>
                 </td>
-                <td>{{ total }}</td>
+                <td>{{ subtotal.formatted }}</td>
               </tr>
             {{/ lines }}
           </tbody>
           <tfoot>
             <tr>
               <td>Subtotal</td>
-              <td>{{ subtotal }}</td>
+              <td>{{ subtotal.formatted }}</td>
             </tr>
             {{# taxes }}
               <tr>
                 <td>
-                  {{ name }} – {{ rate }}%
-                  <span class="tax-number">{{ number }}</span>
+                  {{ salesTax.name }} – {{ salesTax.percent }}%
+                  <span class="tax-number">{{ salesTax.taxNumber }}</span>
                 </td>
-                <td>{{ amount }}</td>
+                <td>{{ amount.formatted }}</td>
               </tr>
             {{/ taxes }}
             <tr>
               <td>Total</td>
-              <td>{{ total }}</td>
+              <td>{{ total.formatted }}</td>
             </tr>
           </tfoot>
         </table>
