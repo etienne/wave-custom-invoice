@@ -30,6 +30,11 @@ module.exports = function(config) {
     return numeral(number).format(config.currencyFormat);
   }
 
+  function formatPhone(number) {
+    // TODO: Customize phone number formatting
+    return number.replace(/\D+/g, '').replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3');
+  }
+
   numeral.locale(config.locale);
 
   // Load Mustache template
@@ -169,6 +174,8 @@ module.exports = function(config) {
         raw: rawSubtotal,
         formatted: formatCurrency(rawSubtotal / 100),
       }
+
+      invoice.business.phone = formatPhone(invoice.business.phone);
 
       if (invoice.business.address.province.name == 'Quebec') {
         invoice.business.address.province.name = 'Québec';
