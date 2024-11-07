@@ -4,10 +4,16 @@ Takes Wave API data and outputs custom HTML and PDF.
 
 ## Usage
 
-First, install in your project:
+Install in your project:
 
 ```
 npm install --save wave-custom-invoice
+```
+
+Install WeasyPrint:
+
+```
+brew install weasyprint
 ```
 
 Next, you need to create an application in Wave, and generate a token.
@@ -22,18 +28,16 @@ const wave = require('wave-custom-invoice');
 const waveConfig = {
   token: 'your_wave_application_token',
   template: 'template.mustache',
-  
-  htmlDirectory: "./output/html",
-  pdfDirectory: "./output/pdf",
+
+  htmlDirectory: "output",
+  pdfDirectory: './output/pdf',
 
   generateHTML: true,
   generatePDF: true,
 
-  pdfConfig: {
-    base: 'http://localhost:5000', // You need to serve the HTML using a web server; I suggest PHP's built-in web server
-    format: "Letter",
-  },
-  
+  serverHost: 'localhost',
+  serverPort: 8080,
+
   locale: 'fr-ca',
   currencyFormat: '0,0.00 $', // Uses Numeral.js
   dateFormat: 'YYYY.MM.DD', // Uses Moment.js

@@ -1,7 +1,7 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const pdf = require('html-pdf');
+const exec = require('child_process').exec;
 const mustache = require('mustache');
 const moment = require('moment');
 const numeral = require('numeral');
@@ -194,19 +194,28 @@ module.exports = function(config) {
       if (config.generateHTML) {
         const htmlFilename = `${config.htmlDirectory}/${invoice.invoiceNumber}.html`;
         ensureDirectoryExists(htmlFilename);
-        fs.writeFile(htmlFilename, html, (err) => {
-          if (err) throw err;
+        try {
+          fs.writeFileSync(htmlFilename, html);
           successMessage(`Output ${htmlFilename}`);
-        });
+        } catch (error) {
+          console.error(error);
+        }
       }
       
       // Generate PDF
       if (config.generatePDF) {
         const pdfFilename = `${config.pdfDirectory}/${invoice.invoiceNumber}.pdf`;
-        pdf.create(html, config.pdfConfig).toFile(pdfFilename, (err) => {
-          if (err) return console.log(err);
-          successMessage(`Output ${pdfFilename}`);
-        });
+        exec(`weasyprint http://${config.serverHost}:${config.serverPort}/${invoice.invoiceNumber}.html ${pdfFilename}`,
+          (error, stdout, stderr) => {
+            if (stderr) {
+              console.error('stderr: ' + stderr);
+            }
+            if (error !== null) {
+              console.error('exec error: ' + error);
+            }
+          });
+        
+        successMessage(`Output ${pdfFilename}`);
       }
     });
   });
